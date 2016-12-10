@@ -1,53 +1,61 @@
-#!usr/bin/perl -w
-=head
-1. clean reads data;
-2. mapping;
-3. ANGsd in all;
-Update: 2015-12-31 15:24:30
-Version 3
-This will just do the mapping.
+=head1 Command-line Option
+  --threads <num>       maximum number of threads used for this program.   
+  --list <str>          the list containing reads directory and output name. 
+  --ref <str>           which reference to use for this mapping? should be one of (np7|mh63|r498|tair10).
+  --help                output help information to screen  
 =cut
+
 use strict;
 use Getopt::Long;
-#die "perl mapping.pl mapping.list; the format of mappling.list:\$dir/\$readsName	\$newName\n" unless @ARGV==1;
+use Parallel::ForkManager;
 
-my $reference;
-my $suffix = "";
-
+my $samtools="samtools";
+my ($Threads, $List, $Reference, $Help);
 GetOptions(
-	"indica" => \$reference
+	"threads:n"=>\$Threads,
+	"list:s"=>\$List,
+	"ref:s"=>\$Reference,
+	"help"=>\$Help
 );
 
-my $cpu=8;
-my $maxDep=150;
-my $fa="/home/hongru/work/database/mouse/genomes/osativa/japonica/nipponbare7/np7.fasta";
+die `pod2text $0` if ($Help);
+die `pod2text $0` unless (defined ($Threads) && defined ($List) && defined ($Reference));
+my $tag = $Reference;
+$Reference = "\$".$Reference;
+$Reference = `echo $Reference`;
+chomp ($Reference);
 
-if ($reference){
-	$fa="/mnt/mouse/genomes/osativa/indica/minghui63/minghui63.fasta";
-	$suffix = "i";
-}
-my $phred="phred33";
-my $samtools="samtools";
-my $samtools_old="/usr/biobin/samtools-0.1.19/samtools";
-my $bwa="bwa";
-my $gatk="/usr/biobin/GenomeAnalysisTK-v3.5.jar";
-my $angsd = "angsd0614";
-my $trimmomatic="/usr/biobin/trimmomatic-0.36.jar";
-my $name;
-
-while (<>){
-	chomp;
+my @list;
+open (LS, $List) or die "list should be file that can be opened.\n";
+while (<LS>){
 	if(/^#/){next;}
-	my @tmp=split;
-	my ($dir, $name) = @tmp;
-	my @reads = glob("$tmp[0]*");
-	&trimFastq(FASTQ=>[@reads], NAME=>$tmp[1]);
-	my @bwa_p_reads = ("$tmp[1].1p.fq", "$tmp[1].2p.fq");
-	my @bwa_1u_reads = ("$tmp[1].1u.fq");
-	my @bwa_2u_reads = ("$tmp[1].2u.fq");
-	&fastq2bwa2bam(FASTQ=>[@bwa_p_reads], NAME=>"$tmp[1].p", REF=>$fa, THREADS=>8);
-	&fastq2bwa2bam(FASTQ=>[@bwa_1u_reads], NAME=>"$tmp[1].1u", REF=>$fa, THREADS=>8);
-	&fastq2bwa2bam(FASTQ=>[@bwa_2u_reads], NAME=>"$tmp[1].2u", REF=>$fa, THREADS=>8);
+	chomp;
+	my ($dir, $name) = split;
+	$name = $name.".".$tag;
+	push @list, "$dir\t$name";
+}
+close LS;
+#print "Reference:$Reference\nLists:@list\nThreads:$Threads\n";
+
+
+foreach my $list (@list){
+	my ($dir, $name) = split /\s+/, $list;
+	my @reads = glob("$dir*");
+	
+	&trimFastq(FASTQ=>[@reads], NAME=>$name, THREADS=>$Threads);
+	
+	my @bwa_p_reads = ("$name.1p.fq", "$name.2p.fq");
+	my @bwa_1u_reads = ("$name.1u.fq");
+	my @bwa_2u_reads = ("$name.2u.fq");
+	&fastq2bwa2bam(FASTQ=>[@bwa_p_reads], NAME=>"$name.p", REF=>$Reference, THREADS=>$Threads);
+	&fastq2bwa2bam(FASTQ=>[@bwa_1u_reads], NAME=>"$name.1u", REF=>$Reference, THREADS=>$Threads);
+	&fastq2bwa2bam(FASTQ=>[@bwa_2u_reads], NAME=>"$name.2u", REF=>$Reference, THREADS=>$Threads);
+}
+
+my $pm=new Parallel::ForkManager($Threads);
+foreach my $list2 (@list) {
+	$pm->start and next;
+	my ($dir, $name) = split /\s+/, $list2;
 
     system "$samtools merge -h $name.p.bam $name.bam $name.p.bam $name.1u.bam $name.2u.bam && echo merge_ok && rm $name.p.bam $name.1u.bam $name.2u.bam";
     system "$samtools fixmate  $name.bam $name\_fixmate.bam  && echo fixmate_ok && rm $name.bam";
@@ -55,14 +63,15 @@ while (<>){
 	system "$samtools rmdup $name.bam $name.rmdup.bam && echo $name\_rmdup_ok && mv $name.rmdup.bam $name.bam";
 	system "$samtools index $name.bam && echo $name\_index_OK";
 	
-	&fixBamGap(BAM=>"$name.bam", REF=>$fa, KEEP_INTERVALS=>"YES");
+	&fixBamGap(BAM=>"$name.bam", REF=>$Reference, KEEP_INTERVALS=>"NO");
 	
-# 	## I will use GATK to fix gap below
-# 	system "java -Xmx8g -jar $gatk -T RealignerTargetCreator -R $fa -I $name.bam -o $name.intervals && echo $name\_intervals_ok";
-# 	system "java -Xmx8g -jar $gatk -T IndelRealigner  -R $fa -I $name.bam -targetIntervals $name.intervals -o $name.gatk.bam && echo $name\_gatk_ok && mv $name.gatk.bam $name.bam";
 	system "$samtools index $name.bam && echo $name\_index_OK";
+	$pm->finish;
 }
+$pm->wait_all_children;
 
+
+##### Subroutines below.
 
 sub trimFastq {
 	my %args = (
