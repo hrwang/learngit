@@ -39,9 +39,10 @@ while (<>){
 	chomp;
 	if(/^#/){next;}
 	my @tmp=split;
-	my $reads=$tmp[0];
-	$name=$tmp[1];
-	$name = $name.$suffix;
+	my @reads = glob("$tmp[0]*");
+	#my $reads=$tmp[0];
+	#$name=$tmp[1];
+	#$name = $name.$suffix;
 	&trimFastq(FASTQ=>[@reads], NAME=>"newName");
 #     system "java -jar $trimmomatic PE -threads $cpu -$phred $reads\_1.fq.gz $reads\_2.fq.gz  $name.1p.fq $name.1u.fq $name.2p.fq $name.2u.fq SLIDINGWINDOW:4:20 LEADING:20 TRAILING:20 MINLEN:30 TOPHRED33 && echo trimmomatic_ok";
 # 	## check file before and after filtering;
