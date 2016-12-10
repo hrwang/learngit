@@ -86,7 +86,7 @@ sub trimFastq {
 	my $trimmomatic="/usr/biobin/trimmomatic-0.36.jar";
 	print "java -jar $trimmomatic $args{PAIR} -threads $args{THREADS} -$args{PHRED} @{$args{FASTQ}}  $outReads SLIDINGWINDOW:$args{SLIDINGWINDOW} LEADING:$args{LEADING} TRAILING:$args{TRAILING} MINLEN:$args{MINLEN} $args{OTHER}";
 	print "\n";
-	print "$args{NAME} fastq trimming ok";
+	print "$args{NAME}_fastq_trimming_ok";
 }
 
 
