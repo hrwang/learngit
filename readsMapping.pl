@@ -74,14 +74,15 @@ sub trimFastq {
 		LEADING => 20, 
 		TRAILING => 20, 
 		MINLEN  => 30, 
-		OTHER => TOPHRED33,
+		OTHER => "TOPHRED33",
 		@_,         # actual args override defaults
 	);
 	if (!defined($args{FASTQ}) || !defined ($args{NAME})){
 		die "Fastq array and name are required!\n";
 	}
 	my $trimmomatic="/usr/biobin/trimmomatic-0.36.jar";
-	system "java -jar $trimmomatic $args{PAIR} -threads $args{THREADS} -$args{PHRED} @{$args{FASTQ}}  $args{NAME}.1p.fq $args{NAME}.1u.fq $args{NAME}.2p.fq $args{NAME}.2u.fq SLIDINGWINDOW:$args{SLIDINGWINDOW} LEADING:$args{LEADING} TRAILING:$args{TRAILING} MINLEN:$args{MINLEN} $args{OTHER}";
+	print "java -jar $trimmomatic $args{PAIR} -threads $args{THREADS} -$args{PHRED} @{$args{FASTQ}}  $args{NAME}.1p.fq $args{NAME}.1u.fq $args{NAME}.2p.fq $args{NAME}.2u.fq SLIDINGWINDOW:$args{SLIDINGWINDOW} LEADING:$args{LEADING} TRAILING:$args{TRAILING} MINLEN:$args{MINLEN} $args{OTHER}";
+	print "\n";
 	print "$args{NAME} fastq trimming ok";
 }
 
