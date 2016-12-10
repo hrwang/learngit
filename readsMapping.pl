@@ -84,9 +84,9 @@ sub trimFastq {
 	if ($args{PAIR} eq "PE"){$outReads = "$args{NAME}.1p.fq $args{NAME}.1u.fq $args{NAME}.2p.fq $args{NAME}.2u.fq";}
 	if ($args{PAIR} eq "SE"){$outReads = "$args{NAME}.fq";}
 	my $trimmomatic="/usr/biobin/trimmomatic-0.36.jar";
-	print "java -jar $trimmomatic $args{PAIR} -threads $args{THREADS} -$args{PHRED} @{$args{FASTQ}}  $outReads SLIDINGWINDOW:$args{SLIDINGWINDOW} LEADING:$args{LEADING} TRAILING:$args{TRAILING} MINLEN:$args{MINLEN} $args{OTHER}";
-	print "\n";
-	print "$args{NAME}_fastq_trimming_ok";
+	system "java -jar $trimmomatic $args{PAIR} -threads $args{THREADS} -$args{PHRED} @{$args{FASTQ}}  $outReads SLIDINGWINDOW:$args{SLIDINGWINDOW} LEADING:$args{LEADING} TRAILING:$args{TRAILING} MINLEN:$args{MINLEN} $args{OTHER}";
+	#print "\n";
+	print "$args{NAME}_fastq_trimming_ok\n";
 }
 
 
