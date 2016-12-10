@@ -40,15 +40,15 @@ while (<>){
 	if(/^#/){next;}
 	my @tmp=split;
 	my @reads = glob("$tmp[0]*");
-	#my $reads=$tmp[0];
-	#$name=$tmp[1];
-	#$name = $name.$suffix;
 	&trimFastq(FASTQ=>[@reads], NAME=>$tmp[1]);
-#     system "java -jar $trimmomatic PE -threads $cpu -$phred $reads\_1.fq.gz $reads\_2.fq.gz  $name.1p.fq $name.1u.fq $name.2p.fq $name.2u.fq SLIDINGWINDOW:4:20 LEADING:20 TRAILING:20 MINLEN:30 TOPHRED33 && echo trimmomatic_ok";
-# 	## check file before and after filtering;
-# 
+	my @bwa_p_reads = ("$tmp[1].1p.fq", "$tmp[1].2p.fq");
+	my @bwa_1u_reads = ("$tmp[1].1u.fq");
+	my @bwa_2u_reads = ("$tmp[1].2u.fq");
+	&fastq2bwa2bam(FASTQ=>[@bwa_p_reads], NAME=>"$tmp[1].p", REF=>$fa, THREADS=>8);
+	&fastq2bwa2bam(FASTQ=>[@bwa_1u_reads], NAME=>"$tmp[1].1u", REF=>$fa, THREADS=>8);
+	&fastq2bwa2bam(FASTQ=>[@bwa_2u_reads], NAME=>"$tmp[1].2u", REF=>$fa, THREADS=>8);
 # 	## Start mapping here.
-#     system "$bwa  mem -M -t $cpu -v 1 -R '\@RG\tID:$name\tSM:$name\tLB:$name'  $fa $name.1p.fq $name.2p.fq |$samtools view -bS -  > $name.p.bam && echo bwa_pair_ok && rm $name.1p.fq $name.2p.fq";
+
 #     system "$bwa  mem -M -t $cpu -v 1 -R '\@RG\tID:$name\tSM:$name\tLB:$name'  $fa $name.1u.fq |$samtools view -bS -  > $name.1u.bam && echo bwa_1u_ok && rm $name.1u.fq";
 #     system "$bwa  mem -M -t $cpu -v 1 -R '\@RG\tID:$name\tSM:$name\tLB:$name'  $fa $name.2u.fq |$samtools view -bS -  > $name.2u.bam && echo bwa_2u_ok && rm $name.2u.fq";
 #     system "$samtools merge -h $name.p.bam $name.bam $name.p.bam $name.1u.bam $name.2u.bam && echo merge_ok && rm $name.p.bam $name.1u.bam $name.2u.bam";
@@ -68,7 +68,7 @@ sub trimFastq {
 		PAIR    => "PE",
 		THREADS => 1,
 		PHRED   => "phred33",
-		FASTQ   => undef,
+		FASTQ   => undef,  ## Fastq names should be stored in an array.
 		NAME    => undef,
 		SLIDINGWINDOW => "4:20",
 		LEADING => 20, 
@@ -85,8 +85,32 @@ sub trimFastq {
 	if ($args{PAIR} eq "SE"){$outReads = "$args{NAME}.fq";}
 	my $trimmomatic="/usr/biobin/trimmomatic-0.36.jar";
 	system "java -jar $trimmomatic $args{PAIR} -threads $args{THREADS} -$args{PHRED} @{$args{FASTQ}}  $outReads SLIDINGWINDOW:$args{SLIDINGWINDOW} LEADING:$args{LEADING} TRAILING:$args{TRAILING} MINLEN:$args{MINLEN} $args{OTHER}";
-	#print "\n";
 	print "$args{NAME}_fastq_trimming_ok\n";
 }
+
+sub fastq2bwa2bam {
+	my %args = (
+		THREADS => 1,
+		FASTQ   => undef, ## Fastq names should be stored in an array.
+		REF    => undef,
+		NAME => undef,
+		OTHER => "-M -v 1",
+		@_,         # actual args override defaults
+	);
+	
+	if (!defined($args{FASTQ}) || !defined ($args{NAME}) || !defined ($args{REF})) {
+		die "reference, fastq array and name are required!\n";
+	}
+	
+	my $bwa="bwa";
+	my $samtools="samtools";
+	print "$bwa  mem -t $args{THREADS}  $args{OTHER} -R '\@RG\tID:$args{NAME}\tSM:$args{NAME}\tLB:$args{NAME}'  $args{REF} @{$args{FASTQ}} | $samtools view -bS -  > $args{NAME}.bam";
+	print "\n";
+	print "$args{NAME}_fastq_bwa2bam_ok\n";
+	
+}
+
+#     
+
 
 
