@@ -46,7 +46,7 @@ while (<>){
 	my @bwa_2u_reads = ("$tmp[1].2u.fq");
 	&fastq2bwa2bam(FASTQ=>[@bwa_p_reads], NAME=>"$tmp[1].p", REF=>$fa, THREADS=>8);
 	&fastq2bwa2bam(FASTQ=>[@bwa_1u_reads], NAME=>"$tmp[1].1u", REF=>$fa, THREADS=>8);
-	&fastq2bwa2bam(FASTQ=>[@bwa_2u_reads], NAME=>"$tmp[1].2u", REF=>$fa, THREADS=>8);
+	&fastq2bwa2bam(FASTQ=>[@bwa_2u_reads], NAME=>"$tmp[1].2u",  THREADS=>8);
 # 	## Start mapping here.
 
 #     system "$bwa  mem -M -t $cpu -v 1 -R '\@RG\tID:$name\tSM:$name\tLB:$name'  $fa $name.1u.fq |$samtools view -bS -  > $name.1u.bam && echo bwa_1u_ok && rm $name.1u.fq";
