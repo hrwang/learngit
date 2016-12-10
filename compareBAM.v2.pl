@@ -23,7 +23,6 @@ GetOptions(
 
 die `pod2text $0` if ($Help);
 die `pod2text $0` unless (defined ($Threads) && defined ($List) && defined ($Reference));
-my $tag = $Reference;
 $Reference = "\$".$Reference;
 $Reference = `echo $Reference`;
 chomp ($Reference);
@@ -33,8 +32,6 @@ open (LS, $List) or die "list should be file that can be opened.\n";
 while (<LS>){
 	if(/^#/){next;}
 	chomp;
-	#my ($dir, $name) = split;
-	#$name = $name.".".$tag;
 	push @list, $_;
 }
 close LS;
