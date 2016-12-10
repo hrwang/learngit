@@ -59,7 +59,7 @@ foreach my $list2 (@list) {
 
     system "$samtools merge -h $name.p.bam $name.bam $name.p.bam $name.1u.bam $name.2u.bam && echo merge_ok && rm $name.p.bam $name.1u.bam $name.2u.bam";
     system "$samtools fixmate  $name.bam $name\_fixmate.bam  && echo fixmate_ok && rm $name.bam";
-    system "$samtools sort -@ $cpu -O bam -o $name.bam $name\_fixmate.bam && echo fixmate_ok_sort_ok && rm $name\_fixmate.bam";
+    system "$samtools sort -@ 1 -O bam -o $name.bam $name\_fixmate.bam && echo fixmate_ok_sort_ok && rm $name\_fixmate.bam";
 	system "$samtools rmdup $name.bam $name.rmdup.bam && echo $name\_rmdup_ok && mv $name.rmdup.bam $name.bam";
 	system "$samtools index $name.bam && echo $name\_index_OK";
 	
