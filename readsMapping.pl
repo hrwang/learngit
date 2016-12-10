@@ -52,6 +52,8 @@ foreach my $list (@list){
 	&fastq2bwa2bam(FASTQ=>[@bwa_2u_reads], NAME=>"$name.2u", REF=>$Reference, THREADS=>$Threads);
 }
 
+
+
 my $pm=new Parallel::ForkManager($Threads);
 foreach my $list2 (@list) {
 	$pm->start and next;
@@ -70,6 +72,11 @@ foreach my $list2 (@list) {
 }
 $pm->wait_all_children;
 
+foreach my $list3 {@list} {
+	my ($dir, $name) = split /\s+/, $list3;
+	system "rm $name.\*fq";
+	print "Clean all the fq file...\n";
+}
 
 ##### Subroutines below.
 
@@ -140,7 +147,7 @@ sub fixBamGap {
 	return "$args{BAM}_gatk_ok";
 	system "mv $args{BAM}.gatk.bam $args{BAM}";
 	if ($args{KEEP_INTERVALS} =~ /NO/i) {
-		system "rm $args{BAM}.intervals";
+		system "rm $args{BAM}.intervals && echo $args{BAM}.intervals_deleted";
 	}
 }
 #     
