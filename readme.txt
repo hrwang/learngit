@@ -3,3 +3,4 @@ git is a distributed version control system.
 git has a mutable index called stage
 Git tracks changes of files.
 Monday has a nice weather.
+Today is saturday!
