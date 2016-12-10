@@ -39,6 +39,7 @@ while (<>){
 	chomp;
 	if(/^#/){next;}
 	my @tmp=split;
+	my ($dir, $name) = @tmp;
 	my @reads = glob("$tmp[0]*");
 	&trimFastq(FASTQ=>[@reads], NAME=>$tmp[1]);
 	my @bwa_p_reads = ("$tmp[1].1p.fq", "$tmp[1].2p.fq");
@@ -46,20 +47,20 @@ while (<>){
 	my @bwa_2u_reads = ("$tmp[1].2u.fq");
 	&fastq2bwa2bam(FASTQ=>[@bwa_p_reads], NAME=>"$tmp[1].p", REF=>$fa, THREADS=>8);
 	&fastq2bwa2bam(FASTQ=>[@bwa_1u_reads], NAME=>"$tmp[1].1u", REF=>$fa, THREADS=>8);
-	&fastq2bwa2bam(FASTQ=>[@bwa_2u_reads], NAME=>"$tmp[1].2u",  THREADS=>8);
-# 	## Start mapping here.
+	&fastq2bwa2bam(FASTQ=>[@bwa_2u_reads], NAME=>"$tmp[1].2u", REF=>$fa, THREADS=>8);
 
-#     system "$bwa  mem -M -t $cpu -v 1 -R '\@RG\tID:$name\tSM:$name\tLB:$name'  $fa $name.1u.fq |$samtools view -bS -  > $name.1u.bam && echo bwa_1u_ok && rm $name.1u.fq";
-#     system "$bwa  mem -M -t $cpu -v 1 -R '\@RG\tID:$name\tSM:$name\tLB:$name'  $fa $name.2u.fq |$samtools view -bS -  > $name.2u.bam && echo bwa_2u_ok && rm $name.2u.fq";
-#     system "$samtools merge -h $name.p.bam $name.bam $name.p.bam $name.1u.bam $name.2u.bam && echo merge_ok && rm $name.p.bam $name.1u.bam $name.2u.bam";
-#     system "$samtools fixmate  $name.bam $name\_fixmate.bam  && echo fixmate_ok && rm $name.bam";
-#     system "$samtools sort -@ $cpu -O bam -o $name.bam $name\_fixmate.bam && echo fixmate_ok_sort_ok && rm $name\_fixmate.bam";
-# 	system "$samtools rmdup $name.bam $name.rmdup.bam && echo $name\_rmdup_ok && mv $name.rmdup.bam $name.bam";
-# 	system "$samtools index $name.bam && echo $name\_index_OK";
+    system "$samtools merge -h $name.p.bam $name.bam $name.p.bam $name.1u.bam $name.2u.bam && echo merge_ok && rm $name.p.bam $name.1u.bam $name.2u.bam";
+    system "$samtools fixmate  $name.bam $name\_fixmate.bam  && echo fixmate_ok && rm $name.bam";
+    system "$samtools sort -@ $cpu -O bam -o $name.bam $name\_fixmate.bam && echo fixmate_ok_sort_ok && rm $name\_fixmate.bam";
+	system "$samtools rmdup $name.bam $name.rmdup.bam && echo $name\_rmdup_ok && mv $name.rmdup.bam $name.bam";
+	system "$samtools index $name.bam && echo $name\_index_OK";
+	
+	&fixBamGap(BAM=>"$name.bam", REF=>$fa, KEEP_INTERVALS=>"YES");
+	
 # 	## I will use GATK to fix gap below
 # 	system "java -Xmx8g -jar $gatk -T RealignerTargetCreator -R $fa -I $name.bam -o $name.intervals && echo $name\_intervals_ok";
 # 	system "java -Xmx8g -jar $gatk -T IndelRealigner  -R $fa -I $name.bam -targetIntervals $name.intervals -o $name.gatk.bam && echo $name\_gatk_ok && mv $name.gatk.bam $name.bam";
-# 	system "$samtools index $name.bam && echo $name\_index_OK";
+	system "$samtools index $name.bam && echo $name\_index_OK";
 }
 
 
@@ -78,7 +79,7 @@ sub trimFastq {
 		@_,         # actual args override defaults
 	);
 	if (!defined($args{FASTQ}) || !defined ($args{NAME})){
-		die "Fastq array and name are required!\n";
+		die "ERROR in function trimFastq: Fastq array and name are required!\n";
 	}
 	my $outReads;
 	if ($args{PAIR} eq "PE"){$outReads = "$args{NAME}.1p.fq $args{NAME}.1u.fq $args{NAME}.2p.fq $args{NAME}.2u.fq";}
@@ -99,17 +100,40 @@ sub fastq2bwa2bam {
 	);
 	
 	if (!defined($args{FASTQ}) || !defined ($args{NAME}) || !defined ($args{REF})) {
-		die "reference, fastq array and name are required!\n";
+		die "ERROR in function fastq2bwa2bam: reference, fastq array and name are required!\n";
 	}
 	
 	my $bwa="bwa";
 	my $samtools="samtools";
-	print "$bwa  mem -t $args{THREADS}  $args{OTHER} -R '\@RG\tID:$args{NAME}\tSM:$args{NAME}\tLB:$args{NAME}'  $args{REF} @{$args{FASTQ}} | $samtools view -bS -  > $args{NAME}.bam";
-	print "\n";
+	system "$bwa  mem -t $args{THREADS}  $args{OTHER} -R '\@RG\tID:$args{NAME}\tSM:$args{NAME}\tLB:$args{NAME}'  $args{REF} @{$args{FASTQ}} | $samtools view -bS -  > $args{NAME}.bam";
+	#print "\n";
 	print "$args{NAME}_fastq_bwa2bam_ok\n";
-	
 }
 
+sub fixBamGap {
+	my %args = (
+		MEMORY => "-Xmx8g",
+		BAM   => undef, 
+		REF    => undef,
+		KEEP_INTERVALS => "NO",
+		@_,         # actual args override defaults
+	);
+	
+	if (!defined($args{BAM}) || !defined ($args{REF})) {
+		die "ERROR in function fixBamGap: reference, bam are required!\n";
+	}
+	
+	my $gatk="/usr/biobin/GenomeAnalysisTK-v3.5.jar";
+
+	system "java $args{MEMORY} -jar $gatk -T RealignerTargetCreator -R $args{REF} -I $args{BAM} -o $args{BAM}.intervals";
+	return "$args{BAM}.intervals_ok";
+	system "java $args{MEMORY} -jar $gatk -T IndelRealigner  -R $args{REF} -I $args{BAM} -targetIntervals $args{BAM}.intervals -o $args{BAM}.gatk.bam";
+	return "$args{BAM}_gatk_ok";
+	system "mv $args{BAM}.gatk.bam $args{BAM}";
+	if ($args{KEEP_INTERVALS} =~ /NO/i) {
+		system "rm $args{BAM}.intervals";
+	}
+}
 #     
 
 
