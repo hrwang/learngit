@@ -43,7 +43,7 @@ while (<>){
 	#my $reads=$tmp[0];
 	#$name=$tmp[1];
 	#$name = $name.$suffix;
-	&trimFastq(FASTQ=>[@reads], NAME=>"newName");
+	&trimFastq(FASTQ=>[@reads], NAME=>$tmp[1]);
 #     system "java -jar $trimmomatic PE -threads $cpu -$phred $reads\_1.fq.gz $reads\_2.fq.gz  $name.1p.fq $name.1u.fq $name.2p.fq $name.2u.fq SLIDINGWINDOW:4:20 LEADING:20 TRAILING:20 MINLEN:30 TOPHRED33 && echo trimmomatic_ok";
 # 	## check file before and after filtering;
 # 
@@ -80,8 +80,11 @@ sub trimFastq {
 	if (!defined($args{FASTQ}) || !defined ($args{NAME})){
 		die "Fastq array and name are required!\n";
 	}
+	my $outReads;
+	if ($args{PAIR} eq "PE"){$outReads = "$args{NAME}.1p.fq $args{NAME}.1u.fq $args{NAME}.2p.fq $args{NAME}.2u.fq";}
+	if ($args{PAIR} eq "SE"){$outReads = "$args{NAME}.fq";}
 	my $trimmomatic="/usr/biobin/trimmomatic-0.36.jar";
-	print "java -jar $trimmomatic $args{PAIR} -threads $args{THREADS} -$args{PHRED} @{$args{FASTQ}}  $args{NAME}.1p.fq $args{NAME}.1u.fq $args{NAME}.2p.fq $args{NAME}.2u.fq SLIDINGWINDOW:$args{SLIDINGWINDOW} LEADING:$args{LEADING} TRAILING:$args{TRAILING} MINLEN:$args{MINLEN} $args{OTHER}";
+	print "java -jar $trimmomatic $args{PAIR} -threads $args{THREADS} -$args{PHRED} @{$args{FASTQ}}  $outReads SLIDINGWINDOW:$args{SLIDINGWINDOW} LEADING:$args{LEADING} TRAILING:$args{TRAILING} MINLEN:$args{MINLEN} $args{OTHER}";
 	print "\n";
 	print "$args{NAME} fastq trimming ok";
 }
