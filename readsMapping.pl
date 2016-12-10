@@ -72,7 +72,7 @@ foreach my $list2 (@list) {
 }
 $pm->wait_all_children;
 
-foreach my $list3 {@list} {
+foreach my $list3 (@list) {
 	my ($dir, $name) = split /\s+/, $list3;
 	system "rm $name.\*fq";
 	print "Clean all the fq file...\n";
