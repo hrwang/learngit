@@ -3,7 +3,7 @@ use warnings;
 while (<>){
 	if (/^#/) {next;}
 	chomp;
-	my $out = &vcfParser(VCF=>$_, QUAL=>30, ALT1HOM = >"YES", MAPQ=>20, MINDP=>2, MAXDP=>50);
+	my $out = &vcfParser(VCF=>$_, QUAL=>30, ALT1HOM =>"YES", MAPQ=>20, MINDP=>2, MAXDP=>50);
 	if ($out != 0) {
 		print "$_\n";
 	}
@@ -19,7 +19,7 @@ sub vcfParser {
 		MINDP  => undef,
 		MAXDP  => undef,
 		DP4AF => undef,
-		ALT1HOM = >undef,
+		ALT1HOM => undef,
 		@_,         # actual args override defaults
 	);
 	
