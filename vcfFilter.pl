@@ -34,7 +34,7 @@ sub vcfParser {
         if (defined $args{MINDP}) {if ($1<$args{MINDP}) {return 0; last;}}
         if (defined $args{MAXDP}) {if ($1>$args{MAXDP}) {return 0; last;}}
     }
-	if (defined $args{ALT1HOM}) {if (!($genotype[0] =~ /1\/1/)) {return 0; last;}}
+	if (defined $args{ALT1HOM}) {if (!($genotypes[0] =~ /1\/1/)) {return 0; last;}}
 
 	if (defined $args{DP4AF}) {	
 		if ($args{VCF} =~ /DP4=(\d+),(\d+),(\d+),(\d+)/){
