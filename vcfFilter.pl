@@ -4,7 +4,7 @@ while (<>){
 	if (/^#/) {next;}
 	chomp;
 	my $out = &vcfParser(VCF=>$_, QUAL=>30, ALT1HOM =>"YES", MAPQ=>20, MINDP=>2, MAXDP=>50);
-	if ($out != 0) {
+	if ($out =~ /DP/) {
 		print "$_\n";
 	}
 }
