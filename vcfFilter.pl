@@ -20,6 +20,8 @@ sub vcfParser {
 		MAXDP  => undef,
 		DP4AF => undef,
 		ALT1HOM => undef,
+		RMINDEL => undef, ## rm indel
+		RMTRI => undef,  ## rm more than one alt.
 		@_,         # actual args override defaults
 	);
 	
@@ -29,6 +31,14 @@ sub vcfParser {
 	
 	my ($chr, $pos, $id, $ref, $alt, $qual, $filter, $info, $format, @genotypes) = split /\t/, $args{VCF};
 	if ($ref eq "N"){return 0; last;}
+	if (defined $args{RMINDEL}) {
+		if ($args{VCF} =~ /INDEL/) {return 0; last;}
+	}
+	
+	if (defined $args{RMTRI}) {
+		if ($alt =~ /,/) {return 0; last;}
+	}
+	
     if ($qual<$args{QUAL}) {return 0; last;}
     if ($args{VCF} =~ /DP=(\d+)/){
         if (defined $args{MINDP}) {if ($1<$args{MINDP}) {return 0; last;}}
